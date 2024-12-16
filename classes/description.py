@@ -10,7 +10,7 @@ import numpy as np
 import utils.sentences as sentences
 from utils.gemini import convert_messages_format
 
-from classes.data_point import Player, Country, Person
+from classes.data_point import Player, Country, Person, PlayerShots
 from classes.data_source import PersonStat
 
 import json
@@ -277,7 +277,7 @@ class PlayerDescription(Description):
 
         player = self.player
         metrics = self.player.relevant_metrics
-        description = f"Here is a statistical description of {player.name}, who played for {player.minutes_played} minutes as a {player.position}. \n\n "
+        description = f'Here is a statistical description of {player.name}, who played for {player.minutes_played} minutes as a {player.position}. \n\n '
 
         subject_p, object_p, possessive_p = sentences.pronouns(player.gender)
 
@@ -661,3 +661,246 @@ class PersonDescription(Description):
             "Finally, summarise exactly how the person compares to others in the same position. "
         )
         return [{"role": "user", "content": prompt}]
+
+class ShotsDescription(Description):
+    output_token_limit = 150
+
+    @property
+    def gpt_examples_path(self):
+        return f"{self.gpt_examples_base}/Shots.xlsx"
+
+    @property
+    def describe_paths(self):
+        return [f"{self.describe_base}/Shots.xlsx"]
+
+    def __init__(self, player: PlayerShots):
+        self.player = player
+        super().__init__()
+
+    def get_intro_messages(self) -> List[Dict[str, str]]:
+        """
+        Constant introduction messages for the assistant.
+
+        Returns:
+        List of dicts with keys "role" and "content".
+        """
+        intro = [
+            {
+                "role": "system",
+                "content": (
+                    "You are a UK-based football scout. "
+                    "You provide succinct and to the point explanations about football players using data. "
+                    "You use the information given to you from the data and answers "
+                    "to earlier user/assistant pairs to give summaries of players shots during the Copa America 2024."
+                ),
+            },
+            {
+                "role": "user",
+                "content": "Do you refer to the game you are an expert in as soccer or football?",
+            },
+            {
+                "role": "assistant",
+                "content": (
+                    "I refer to the game as football. "
+                    "When I say football, I don't mean American football, I mean what Americans call soccer. "
+                    "But I always talk about football, as people do in the United Kingdom."
+                ),
+            },
+        ]
+        if len(self.describe_paths) > 0:
+            intro += [
+                {
+                    "role": "user",
+                    "content": "First, could you answer some questions about football for me?",
+                },
+                {"role": "assistant", "content": "Sure!"},
+            ]
+
+        return intro
+
+    def synthesize_text(self):
+
+        player = self.player
+        df = player.ser_metrics
+        description = f'Here is a description of {player.name}\'s shots during Copa America 2024. \n\n '
+        description += f'He attempted '
+        description += f'{df["total_shots"]} shots during the tournament. '
+        #Pitch zone
+        if df["outside_shots"] > 0 :
+            to_be = 'were' if df["outside_shots"] > 1 else 'was'
+            description += f'{df["outside_shots"]} of his shots {to_be} from outside the box. '
+        if df["inside_shots"] > 0 :
+            to_be = 'were' if df["inside_shots"] > 1 else 'was'
+            description += f'{df["inside_shots"]} of his shots {to_be} from inside the box. '
+
+        #Part of the body
+        if df["right_shots"] > 0 :
+            to_be = 'were' if df["right_shots"] > 1 else 'was'
+            description += f'{df["right_shots"]} of his shots {to_be} made with his right foot. '
+        if df["left_shots"] > 0 :
+            to_be = 'were' if df["left_shots"] > 1 else 'was'
+            description += f'{df["left_shots"]} of his shots {to_be} made with his left foot. '
+        if df["head_shots"] > 0 :
+            to_be = 'were' if df["head_shots"] > 1 else 'was'
+            description += f'{df["head_shots"]} of his shots {to_be} made with his head. '
+        if df["other_part_shots"] > 0 :
+            to_be = 'were' if df["other_part_shots"] > 1 else 'was'
+            description += f'{df["other_part_shots"]} of his shots {to_be} made with other part of the body. '
+
+        #Type of shot
+        if df["penalty_shots"] > 0 :
+            to_be = 'were' if df["penalty_shots"] > 1 else 'was'
+            type_name = "penalties" if df["penalty_shots"] > 1 else "a penalty"
+            description += f'{df["penalty_shots"]} of his shots {to_be} {type_name}. '
+        if df["free_kick_shots"] > 0 :
+            to_be = 'were' if df["free_kick_shots"] > 1 else 'was'
+            type_name = "free kicks" if df["free_kick_shots"] > 1 else "a free kick"
+            description += f'{df["free_kick_shots"]} of his shots {to_be} {type_name}. ' 
+        if df["open_play_shots"] > 0 :
+            to_be = 'were' if df["open_play_shots"] > 1 else 'was'
+            description += f'{df["open_play_shots"]} of his shots {to_be} from open play. '
+
+        #Outcome
+        if df["goals"] > 0 :
+            type_name = "goals" if df["goals"] > 1 else "goal"
+            description += f'He socred {df["goals"]} {type_name}. '
+        if df["saved_shots"] > 0 :
+            to_be = 'were' if df["saved_shots"] > 1 else 'was'
+            description += f'{df["saved_shots"]} of his shots {to_be} saved by the goalkeeper. '
+        if df["blocked_shots"] > 0 :
+            to_be = 'were' if df["blocked_shots"] > 1 else 'was'
+            description += f'{df["blocked_shots"]} of his shots {to_be} blocked by a defender. '
+        if df["off_t_shots"] > 0 :
+            to_be = 'were' if df["off_t_shots"] > 1 else 'was'
+            description += f'{df["off_t_shots"]} of his shots {to_be} off target or hit the posts. '    
+
+        #Inside the box - Outcome
+        description += f'From his shots inside the box, '
+        if df["inside_goals"] > 0 :
+            type_name = "goals" if df["inside_goals"] > 1 else "goal"
+            description += f'he socred {df["inside_goals"]} {type_name}, '
+        if df["inside_saved_shots"] > 0 :
+            to_be = 'were' if df["inside_saved_shots"] > 1 else 'was'
+            description += f'{df["inside_saved_shots"]} {to_be} saved by the goalkeeper, '
+        if df["inside_blocked_shots"] > 0 :
+            to_be = 'were' if df["inside_blocked_shots"] > 1 else 'was'
+            description += f'{df["inside_blocked_shots"]} {to_be} blocked by a defender, '
+        if df["inside_off_t_shots"] > 0 :
+            to_be = 'were' if df["inside_off_t_shots"] > 1 else 'was'
+            description += f'{df["inside_off_t_shots"]} {to_be} off target or hit the posts. '
+        
+        if description.endswith(", "):
+            description = description[:-2] + ". "
+
+        #Outside the box - Outcome
+        description += f'From his shots outside the box, '
+        if df["outside_goals"] > 0 :
+            type_name = "goals" if df["outside_goals"] > 1 else "goal"
+            description += f'he socred {df["outside_goals"]} {type_name}, '
+        if df["outside_saved_shots"] > 0 :
+            to_be = 'were' if df["outside_saved_shots"] > 1 else 'was'
+            description += f'{df["outside_saved_shots"]} {to_be} saved by the goalkeeper, '
+        if df["outside_blocked_shots"] > 0 :
+            to_be = 'were' if df["outside_blocked_shots"] > 1 else 'was'
+            description += f'{df["outside_blocked_shots"]} {to_be} blocked by a defender, '
+        if df["outside_off_t_shots"] > 0 :
+            to_be = 'were' if df["outside_off_t_shots"] > 1 else 'was'
+            description += f'{df["outside_off_t_shots"]} {to_be} off target or hit the posts. '
+        
+        if description.endswith(", "):
+            description = description[:-2] + ". "
+
+        #Free kicks - Outcome
+        description += f'From his free kick shtots, '
+        if df["free_kick_goals"] > 0 :
+            type_name = "goals" if df["free_kick_goals"] > 1 else "goal"
+            description += f'he socred {df["free_kick_goals"]} {type_name}, '
+        if df["free_kick_saved_shots"] > 0 :
+            to_be = 'were' if df["free_kick_saved_shots"] > 1 else 'was'
+            description += f'{df["free_kick_saved_shots"]} {to_be} saved by the goalkeeper, '
+        if df["free_kick_blocked_shots"] > 0 :
+            to_be = 'were' if df["free_kick_blocked_shots"] > 1 else 'was'
+            description += f'{df["free_kick_blocked_shots"]} {to_be} blocked by a defender, '
+        if df["free_kick_off_t_shots"] > 0 :
+            to_be = 'were' if df["free_kick_off_t_shots"] > 1 else 'was'
+            description += f'{df["free_kick_off_t_shots"]} {to_be} off target or hit the posts. '
+        
+        if description.endswith(", "):
+            description = description[:-2] + ". "
+
+        description += f'From his penalty shots, '
+        #Penalty - Outcome
+        if df["penalty_goals"] > 0 :
+            type_name = "goals" if df["penalty_goals"] > 1 else "goal"
+            description += f'he socred {df["penalty_goals"]} {type_name}, '
+        if df["penalty_saved_shots"] > 0 :
+            to_be = 'were' if df["penalty_saved_shots"] > 1 else 'was'
+            description += f'{df["penalty_saved_shots"]} {to_be} saved by the goalkeeper, '
+        if df["penalty_blocked_shots"] > 0 :
+            to_be = 'were' if df["penalty_blocked_shots"] > 1 else 'was'
+            description += f'{df["penalty_blocked_shots"]} {to_be} blocked by a defender, '
+        if df["penalty_off_t_shots"] > 0 :
+            to_be = 'were' if df["penalty_off_t_shots"] > 1 else 'was'
+            description += f'{df["penalty_off_t_shots"]} {to_be} off target or hit the posts. '
+        
+        if description.endswith(", "):
+            description = description[:-2] + ". "
+
+        #Goals -Pitch zone
+        if df["outside_goals"] > 0 :
+            to_be = 'were' if df["outside_goals"] > 1 else 'was'
+            description += f'{df["outside_goals"]} of his goals {to_be} scored from outside the box. '
+        if df["inside_goals"] > 0 :
+            to_be = 'were' if df["inside_goals"] > 1 else 'was'
+            description += f'{df["inside_goals"]} of his goals {to_be} scored from inside the box. '
+
+        #Part of the body
+        if df["right_goals"] > 0 :
+            to_be = 'were' if df["right_goals"] > 1 else 'was'
+            description += f'{df["right_goals"]} of his goals {to_be} scored using his right foot. '
+        if df["left_goals"] > 0 :
+            to_be = 'were' if df["left_goals"] > 1 else 'was'
+            description += f'{df["left_goals"]} of his goals {to_be} scored using his left foot. '
+        if df["head_goals"] > 0 :
+            to_be = 'were' if df["head_goals"] > 1 else 'was'
+            description += f'{df["head_goals"]} of his goals {to_be} scored using his head. '
+        if df["other_part_goals"] > 0 :
+            to_be = 'were' if df["other_part_goals"] > 1 else 'was'
+            description += f'{df["other_part_goals"]} of his goals {to_be} scored using other part of the body. '
+
+        #Type of shot
+        if df["penalty_goals"] > 0 :
+            to_be = 'were' if df["penalty_goals"] > 1 else 'was'
+            type_name = "penalties" if df["penalty_goals"] > 1 else "a penalty"
+            description += f'{df["penalty_goals"]} of his goals {to_be} scored from {type_name}. '
+        if df["free_kick_goals"] > 0 :
+            to_be = 'were' if df["free_kick_goals"] > 1 else 'was'
+            type_name = "free kicks" if df["free_kick_goals"] > 1 else "a free kick"
+            description += f'{df["free_kick_goals"]} of his goals {to_be} scored from {type_name}. '
+        if df["open_play_goals"] > 0 :
+            to_be = 'were' if df["open_play_goals"] > 1 else 'was'
+            description += f'{df["open_play_goals"]} of his goals {to_be} scored from open play. '
+
+        if df["goals"] > 0 and df["accumulated_npxg"] > 0:
+            performance_description =  "he socred less goals than expected, so he underperformed" if df["goals"] < df["accumulated_npxg"] else "he scored more goals than expected, so he overperformed"
+            scored_description = 'goals' if df["goals"] > 1 else 'goal'
+            description += f'His accumulated expected goal (excluding penalties) was {df["accumulated_npxg"]}, '
+            description += f'since he scored {df["goals"]} {scored_description}, {performance_description}. '
+        
+        if df["max_npxg"] > 0:
+            result_description = "off target or hit the posts" if df["result"] == "Off T" or df["result"] == "Wayward" or df["result"] == "Post" else "saved" if df["result"] == "Saved" or df["result"] == "Saved to Post" else df["result"]
+            description += f'His shot with the highest expected goal ({df["max_npxg"]}) was {result_description}.'
+
+        return description
+
+    def get_prompt_messages(self):
+        prompt = (
+            f"Please use the player shots description enclosed with ``` to give a concise, 5 sentence summary of the player's shots during the tournament. "
+            f"The first sentence should use varied language to give an overview of the player performance. "
+            "The second sentence should describe the player's specific strengths based on the shots. "
+            "The third sentence should describe where the player performed well based on the shots he made. "
+            "The fourth sentence should describe where the player performed wrong based on the shots he made. "
+            "Finally, summarise exactly how the player performed based on the shots."
+        )
+        return [{"role": "user", "content": prompt}]
+

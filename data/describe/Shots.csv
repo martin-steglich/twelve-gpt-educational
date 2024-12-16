@@ -1,0 +1,26 @@
+﻿,user,assistant
+0,What is a shot?,"A shot in football is an attempt by a player to score a goal by directing the ball toward the opponent's goal using any legal body part (e.g., foot, head, knee). A shot can either result in a goal, be saved by the goalkeeper, hit the posts, miss the goal, or be blocked by a defender"
+1,"What does it mean for a shot to be ""goal""?","A shot is considered a goal when the ball crosses the goal line between the posts and beneath the crossbar, without any infringement of the rules."
+2,"What does it mean for a shot to be ""saved""?","A shot is ""saved"" when the goalkeeper successfully stops the ball from crossing the goal line, either by catching or deflecting it."
+3,"What does it mean for a shot to be ""blocked""?","A shot is ""blocked"" when it is deflected or stopped by a defender before it reaches the goal or goalkeeper."
+4,"What does it mean for a shot to be ""Off T""?","""Off T"" stands for ""Off Target."" It means the shot missed the goal and did not require a save or result in a goal (e.g., went wide or over the crossbar)."
+5,"What does it mean for a shot to be ""Post""?","A ""Post"" shot refers to when the ball strikes the goalpost or crossbar but does not go into the goal."
+6,"What does it mean for a shot to be ""Wayward""?","A ""Wayward"" shot is a poorly aimed attempt that significantly misses the goal, often with little chance of success."
+7,"What does it mean for a shot to be ""Saved to Post""?",This describes a scenario where the goalkeeper saves the shot and it bounces off the goal frame
+8,What is an open play shot?,"An open play shot is taken during the natural flow of the game, not from a set piece (like a free kick or penalty)."
+9,What is a free kick shot?,"A free kick shot is an attempt taken directly from a free kick, awarded after a foul or infringement by the opponent."
+10,What is a penalty shot?,"A penalty shot is taken from the penalty spot, awarded after a foul inside the penalty box. It is one of the highest-quality opportunities to score."
+11,What is a half volley shot?,A half volley shot is taken immediately after the ball bounces and the contact was made off the ground off the ground.
+12,What is a normal shot?,"A normal shot is a standard attempt taken with the ball on the ground, without any special technique."
+13,What is a lob shot?,A lob shot is a shot that had a high arc trajectory in order to pass over the opposition player
+14,What is a volley shot?,"A volley shot is taken while the ball is in the air, the ball never touched the ground prior to the shot"
+15,What is a diving header shot?,Shot attempted with header while player diving in front of him to reach the ball
+16,What is an overhead kick shot?,"An overhead kick, also known as a bicycle kick, is an acrobatic shot where the player kicks the ball while airborne, with their back to the goal."
+17,What is a backheel shot,A backheel shot is taken using the heel of the foot.
+18,What is a shot form out of the box?,"A shot taken from outside the penalty box, usually from long range. These shots are generally harder to convert into goals."
+19,What is a shot from inse the box?,"A shot taken from within the penalty box, closer to the goal. These shots typically have a higher likelihood of success due to proximity."
+20,How does the location on the pitch affect the quality of a shot?,"Shots taken closer to the goal or from central areas have higher chances of success (higher xG), while shots from wide angles or long distances are less likely to result in goals."
+21,"What is expected goals (xG), and how is it related to shots?","Expected Goals (xG) is a metric that estimates the likelihood of a shot resulting in a goal based on factors like distance, angle, type of play, and type of shot. Higher xG values indicate better scoring opportunities."
+22,How would you describe a player who is overperforming his shots?,"A player is overperforming their shots when their actual goals scored exceed their expected goals (xG). This may indicate exceptional finishing ability, luck, or both."
+23,How would you describe a player who is underperforming his shots?,"A player is underperforming their shots when their actual goals scored are lower than their expected goals (xG). This may suggest poor finishing, bad luck, or strong goalkeeping opposition."
+24,I want to know about another player?,"If you want to know about another player, select them in the bar tot the left!"

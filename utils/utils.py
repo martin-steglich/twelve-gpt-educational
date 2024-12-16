@@ -148,6 +148,25 @@ def select_country(container, countries):
 
     return country
 
+def select_player_shots(container, players):
+
+    # Make a copy of Players object
+    player = copy.deepcopy(players)
+
+    # Filter players by position and select a player with sidebar selectors
+    with container:
+
+        # Filter for player name
+        player.select_and_filter(
+            column_name="player_name",
+            label="Player",
+        )
+
+        # Return data point
+
+        player = player.to_data_point()
+
+    return player
 
 def create_chat(to_hash, chat_class, *args, **kwargs):
     chat_hash_state = hash(to_hash)

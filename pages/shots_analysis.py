@@ -11,7 +11,7 @@ import streamlit as st
 
 from classes.data_source import PlayerShotsStats
 from classes.data_point import PlayerShots
-from classes.visual import ShotsPlot
+from classes.visual import DistributionPlot
 from classes.description import (
     ShotsDescription,
 )
@@ -86,7 +86,7 @@ metrics = [
 
 
 # Now select the focal player
-player = select_player_shots(sidebar_container, players_shots)
+player = select_player_shots(sidebar_container, players_shots, gender="male", position="Forward")
 
 st.write(
     "This app can only handle three or four users at a time. Please [download](https://github.com/soccermatics/twelve-gpt-educational) and run on your own computer with your own Gemini key."
@@ -113,10 +113,10 @@ if chat.state == "empty":
 
     # Make a plot of the distribution of the metrics for all players
     # We reverse the order of the elements in metrics for plotting (because they plot from bottom to top)
-    visual = ShotsPlot()
+    # visual = DistributionPlot(metrics[::-1])
     # visual.add_title_from_player(player)
     # visual.add_players(players, metrics=metrics)
-    visual.add_player_shots(player)
+    # visual.add_player(player, len(players.df), metrics=metrics)
 
     # Now call the description class to get the summary of the player
     description = ShotsDescription(player)

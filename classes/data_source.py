@@ -107,7 +107,6 @@ class Stats(Data):
         # Add ranks and pct_ranks as new columns
         self.df = pd.concat([df, df_metric_zscores, df_metric_ranks], axis=1)
 
-
 class PlayerStats(Stats):
     data_point_class = data_point.Player
     # This can be used if some metrics are not good to perform, like tackles lost.
@@ -576,3 +575,139 @@ class PersonStat(Stats):
         ser_metrics = self.df.squeeze()
 
         return self.data_point_class(id=id, name=name, ser_metrics=ser_metrics)
+
+class PlayerShotsStats(Stats):
+    data_point_class = data_point.PlayerShots
+    # This can be used if some metrics are not good to perform, like tackles lost.
+    negative_metrics = []
+
+    def __init__(self):
+        super().__init__()
+
+    def get_raw_data(self):
+
+        df = pd.read_csv("data/events/Shots.csv" , encoding='utf-8')
+
+        return df
+
+    def process_data(self, df_raw):
+        processed_df = pd.DataFrame()
+
+        for player in df_raw['player_nickname'].unique():
+            player_df = pd.DataFrame()
+            df = df_raw[df_raw['player_nickname'] == player]
+            # print(player)
+            player_df['player_name'] = player
+            
+            #Outcome
+            goal_mask = df["outcome_name"] == "Goal"
+            saved_mask = (df["outcome_name"] == "Saved") | (df["outcome_name"] == "Saved to Post")
+            blocked_mask = df["outcome_name"] == "Blocked"
+            off_t_mask = (df["outcome_name"] == "Off T") | (df["outcome_name"] == "Wayward") | (df["outcome_name"] == "Post")
+            goals = df[goal_mask]
+            saved = df[saved_mask]
+            blocked = df[blocked_mask]
+            off_t = df[off_t_mask]
+
+            
+            #Pitch zone
+            outside_mask = df["box"] == "outside"
+            inside_mask = df["box"] == "inside"
+            outside = df[outside_mask]
+            inside = df[inside_mask]
+
+            #Body part
+            right_mask = df["body_part_name"] == "Right Foot"
+            left_mask = df["body_part_name"] == "Left Foot"
+            head_mask = df["body_part_name"] == "Head"
+            other_mask = df["body_part_name"] == "Other"
+            right = df[right_mask]
+            left = df[left_mask]
+            head = df[head_mask]
+            other = df[other_mask]
+
+            #Type
+            penalty_mask = df["sub_type_name"] == "Penalty"
+            free_kick_mask = df["sub_type_name"] == "Free Kick"
+            open_play_mask = df["sub_type_name"] == "Open Play"
+            penalty = df[penalty_mask]
+            free_kick = df[free_kick_mask]
+            open_play = df[open_play_mask]
+
+            # Create player statistics as a dictionary
+            player_stats = {
+                "player_name": player,
+                "total_shots": len(df),
+                "outside_shots": len(outside),
+                "inside_shots": len(inside),
+                "right_shots": len(df[right_mask]),
+                "left_shots": len(df[left_mask]),
+                "head_shots": len(df[head_mask]),
+                "other_part_shots": len(df[other_mask]),
+                "penalty_shots": len(df[penalty_mask]),
+                "free_kick_shots": len(df[free_kick_mask]),
+                "open_play_shots": len(df[open_play_mask]),
+                "goals": len(goals),
+                "saved_shots": len(saved),
+                "blocked_shots": len(blocked),
+                "off_t_shots": len(off_t),
+                "inside_goals": len(goals[inside_mask]),
+                "inside_saved_shots": len(saved[inside_mask]),
+                "inside_blocked_shots": len(blocked[inside_mask]),
+                "inside_off_t_shots": len(off_t[inside_mask]),
+                "outside_goals": len(goals[outside_mask]),
+                "outside_saved_shots": len(saved[outside_mask]),
+                "outside_blocked_shots": len(blocked[outside_mask]),
+                "outside_off_t_shots": len(off_t[outside_mask]),
+                "free_kick_goals": len(goals[free_kick_mask]),
+                "free_kick_saved_shots": len(saved[free_kick_mask]),
+                "free_kick_blocked_shots": len(blocked[free_kick_mask]),
+                "free_kick_off_t_shots": len(off_t[free_kick_mask]),
+                "penalty_goals": len(goals[penalty_mask]),
+                "penalty_saved_shots": len(saved[penalty_mask]),
+                "penalty_blocked_shots": len(blocked[penalty_mask]),
+                "penalty_off_t_shots": len(off_t[penalty_mask]),
+                "right_goals": len(goals[right_mask]),
+                "left_goals": len(goals[left_mask]),
+                "head_goals": len(goals[head_mask]),
+                "other_part_goals": len(goals[other_mask]),
+                "open_play_goals": len(goals[open_play_mask]),
+            }
+            
+            # Non-penalty xG calculations
+            if len(df[~penalty_mask]) > 0:
+                player_stats["accumulated_npxg"] = df[~penalty_mask]["shot_statsbomb_xg"].sum()
+                player_stats["max_npxg"] = df[~penalty_mask]["shot_statsbomb_xg"].max()
+                player_stats["result"] = df.loc[df[~penalty_mask]['shot_statsbomb_xg'].idxmax(), 'outcome_name']
+            else:
+                player_stats["accumulated_npxg"] = 0
+                player_stats["max_npxg"] = 0
+                player_stats["result"] = 0
+
+                # Convert the stats dictionary to a DataFrame and append it
+            player_df = pd.DataFrame([player_stats])
+            processed_df = pd.concat([processed_df, player_df], ignore_index=True)
+
+        return processed_df
+
+    def to_data_point(self) -> data_point.PlayerShots:
+
+        id = self.df.index[0]
+
+        # Reindexing dataframe
+        self.df.reset_index(drop=True, inplace=True)
+
+        name = self.df["player_name"][0]
+        self.df = self.df.drop(columns=["player_name"])
+
+        # Convert to series
+        ser_metrics = self.df.squeeze()
+
+        raw_data = self.get_raw_data()
+
+        return self.data_point_class(
+            id=id,
+            name=name,
+            ser_metrics=ser_metrics,
+            player_shots=raw_data[raw_data.player_nickname == name],
+        )

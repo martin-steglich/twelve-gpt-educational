@@ -21,5 +21,5 @@ sidebar_container = st.sidebar.container()
 st.divider()
 
 st.write(
-    "To make your own page create a page_name.py file and link to it in add_page_selector() in utils/page_components.py"
+    "To make your own page create a page_name.py file and link to it in add_page_selector() in utils/page_components.py. THIS ISN't MY OWN PAGE"
 )

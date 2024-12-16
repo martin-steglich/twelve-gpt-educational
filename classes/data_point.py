@@ -54,3 +54,13 @@ class Person(Stat):
         self.id = id
         self.name = name
         self.ser_metrics = ser_metrics
+
+class PlayerShots(Stat):
+
+    def __init__(self, id, name, ser_metrics, player_shots):
+
+        # Unpack ser_info
+        self.id = id
+        self.name = name
+        self.ser_metrics = ser_metrics
+        self.player_shots = player_shots

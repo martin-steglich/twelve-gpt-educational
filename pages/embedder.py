@@ -82,4 +82,5 @@ path_embedded = os.path.normpath("data/embeddings/" + directory)
 st.write("Updating all embeddings...")
 for root, name in file_walk(path_describe):
     print_path = os.path.join(root, name).replace(path_describe, "")[1:]
+    st.write(os.path.join(root, name))
     embed(os.path.join(root, name), embeddings)
