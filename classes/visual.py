@@ -10,12 +10,13 @@ from classes.data_point import Player, Country, Person, PlayerShots
 from classes.data_source import PlayerStats, CountryStats, PersonStat
 from typing import Union
 from matplotlib.colors import ListedColormap, to_rgba
-from mplsoccer import VerticalPitch, add_image, FontManager, Sbopen
-from mplsoccer import Pitch, Sbopen, VerticalPitch
+from mplsoccer import VerticalPitch
 import matplotlib.pyplot as plt
 from io import BytesIO
 from PIL import Image
 import matplotlib.cm as cm
+import matplotlib.font_manager as font_manager
+from PIL import Image
 
 
 def hex_to_rgb(hex_color: str) -> tuple:
@@ -99,6 +100,7 @@ class Visual:
     light_gray = hex_to_rgb("#d3d3d3")
     table_green = hex_to_rgb("#009940")
     table_red = hex_to_rgb("#FF4B00")
+    
 
     def __init__(self, pdf=False, plot_type="scout"):
         self.pdf = pdf
@@ -107,8 +109,7 @@ class Visual:
         else:
             self.font_size_multiplier = 1.0
         # self.fig = go.Figure()
-        self.pitch = VerticalPitch(pitch_type='statsbomb',  line_zorder=0, line_color='#c7d5cc', half=True)  # control the goal transparency
-        self.fig, self.ax = self.pitch.draw(figsize=(10, 10))
+        
         # self._setup_styles()
         # self.plot_type = plot_type
 
@@ -570,59 +571,28 @@ class DistributionPlotPersonality(Visual):
 
 
 class ShotsPlot(Visual):
+    
+
     def __init__(self, *args, **kwargs):
         self.empty = True
-        # self.marker_color = (
-        #     c for c in [Visual.white, Visual.bright_yellow, Visual.bright_blue]
-        # )
-        # self.marker_shape = (s for s in ["square", "hexagon", "diamond"])
+        font_path = 'data/ressources/fonts/Poppins-Regular.ttf'
+        self.font_props = font_manager.FontProperties(fname=font_path)
+
+        self.background_color = '#F5F5F5'
+        self.primary_text_color = '#000000'
+        self.secondary_text_color = '#757575'
+        self.primary_color = '#649CCB'
         super().__init__(*args, **kwargs)
+        self.fig = plt.figure(figsize=(8,12))
+        self.fig.patch.set_facecolor(self.background_color)
+        self.fig.patch.set_linewidth(1)
+        self.fig.patch.set_edgecolor(self.secondary_text_color)
         # if labels is not None:
         #     self._setup_axes(labels)
         # else:
         #     self._setup_axes()
     #     # self._setup_pitch()
 
-    # # def _setup_pitch(self):
-    # #     # Create the pitch using mplsoccer
-    # #     pitch = VerticalPitch(pitch_type='statsbomb', line_color='black', half=True)
-    # #     fig, ax = pitch.draw(figsize=(8, 6))
-
-    # #     # Save the pitch as an image
-    # #     buf = BytesIO()
-    # #     plt.savefig(buf, format="png", dpi=150, bbox_inches='tight', pad_inches=0)
-    # #     buf.seek(0)
-    # #     plt.close(fig)
-
-    # #     # Load the pitch image
-    # #     pitch_img = Image.open(buf)
-
-    # #     # Configure the pitch dimensions
-    # #     pitch_length = 120  # Adjust to your pitch dimensions
-    # #     pitch_width = 80
-    # #     self.fig.add_layout_image(
-    # #         dict(
-    # #             source=pitch_img,
-    # #             x=0,
-    # #             y=80,
-    # #             xref="x",
-    # #             yref="y",
-    # #             sizex=120,
-    # #             sizey=80,
-    # #             xanchor="left",
-    # #             yanchor="top",
-    # #             layer="below"
-    # #         )
-    # #     )
-    #     # Update layout for Plotly figure
-    #     self.fig.update_layout(
-    #         title=f"Shots for AA",
-    #         xaxis=dict(range=[0, pitch_length], showgrid=False, zeroline=False, visible=False),
-    #         yaxis=dict(range=[0, pitch_width], showgrid=False, zeroline=False, visible=False),
-    #         height=600,
-    #         width=40,
-    #         plot_bgcolor='white'
-    #     )
 
 
     def _setup_axes(self, labels=["Worse", "Average", "Better"]):
@@ -776,53 +746,36 @@ class ShotsPlot(Visual):
         # #         },
         # #     )
 
-    def plot_shots(self, name, player_shots):
-        xg_bins = np.arange(0, player_shots['shot_statsbomb_xg'].max() + 0.1, 0.1)
-        cmap = create_pastel_cmap("Blues", n_colors=len(xg_bins), blend_ratio=0.3)#cm.get_cmap("Reds", len(xg_bins))  # Discrete colormap based on the bins
-        for _, row in player_shots.iterrows():
-            marker = get_marker(row.sub_type_name, row.body_part_name)
-            rounded_xg = round(row.shot_statsbomb_xg, 1)
-            color = cmap(int(rounded_xg * 10))
-            edgecolor='#3473ad'
-            linewidth=1
-            alpha=1
-            if row.outcome_name == 'Goal' :
-                self.pitch.scatter(row.x, row.y,
-                                # size varies between 100 and 1900 (points squared)
-                                s=210,
-                                edgecolors='#3473ad',
-                                linewidths=1,
-                                alpha=1,# give the markers a charcoal border
-                                c='white',  # color for scatter in hex format
-                                # for other markers types see: https://matplotlib.org/api/markers_api.html
-                                marker=marker,
-                                ax=self.ax)
-            elif row.outcome_name == 'Saved to Post' or row.outcome_name == 'Saved':
-                edgecolor = 'black'
-                linewidth=1.5
-            elif row.outcome_name == 'Off T' or row.outcome_name == 'Wayward' or row.outcome_name == 'Post':
-                edgecolor = 'black'
-                linewidth=0.8
-                color='gray'
-                alpha=0.2
-                
-            elif row.outcome_name == 'Blocked':
-                edgecolor = 'gray'
-                linewidth=0.8
-                # color = 'gray'
+    def plot_shots(self, player_shots, stats):
+        ax2 = self.fig.add_axes([.05, .3,.91, .5])
+        ax2.set_facecolor(self.background_color)
 
-            self.pitch.scatter(row.x, row.y,
-                                # size varies between 100 and 1900 (points squared)
-                                s=100,
-                                alpha=alpha,# give the markers a charcoal border
-                            edgecolor=edgecolor,
-                                c=color,
-                            linewidths=linewidth,
-                                # c='#3473ad',  # color for scatter in hex format
-                                # for other markers types see: https://matplotlib.org/api/markers_api.html
-                                marker=marker,
-                                ax=self.ax)
-        st.pyplot(self.fig)
+        pitch = VerticalPitch(pitch_type='statsbomb',  
+                            line_zorder=0, 
+                            line_color=self.secondary_text_color, 
+                            half=True, 
+                            pitch_color=self.background_color, 
+                            pad_bottom=.5,
+                            linewidth=.75,
+                            axis=True,
+                            label=True,
+                            corner_arcs=True,
+                            goal_type='box')
+        pitch.draw(ax=ax2)
+
+        ax2.scatter(x=7, y=stats['avg_distance_location'], color=self.secondary_text_color,linewidth=.5, s=50)
+        ax2.plot([7,7], [stats['avg_distance_location'],120], color=self.secondary_text_color, linewidth=1)
+        ax2.text(x=7, y=stats['avg_distance_location']-4, s=f'Avg. Distance\n{stats["avg_distance"]:.1f} meters',
+                fontsize=8, fontproperties=self.font_props, color=self.secondary_text_color, ha='center')
+
+        for shot in player_shots.to_dict(orient='records'):
+            pitch.scatter(shot['x'], shot['y'],
+                            s=300 * shot['shot_statsbomb_xg'],
+                            color=self.primary_color if shot['outcome_name'] == 'Goal' else self.background_color,
+                            alpha=.7,
+                            edgecolor=self.secondary_text_color, linewidth=.8,ax=ax2)
+        
+        ax2.axis('off')
 
     def add_player_shots(self, playerShots: PlayerShots):
 
@@ -834,13 +787,34 @@ class ShotsPlot(Visual):
         if isinstance(playerShots, PlayerShots):
             ser_plot = playerShots.player_shots
             name = playerShots.name
+            stats = playerShots.ser_metrics
         else:
             raise TypeError("Invalid player type: expected Player or Country")
 
         self.plot_shots(
             player_shots=ser_plot,
-            name=name
+            stats=stats
         )
+
+    def add_stats(self, playerShots: PlayerShots):
+        stats = playerShots.ser_metrics
+
+        ax3 = self.fig.add_axes([0, .25, 1, .05])
+        ax3.set_facecolor(self.background_color)
+
+        ax3.text(x=.2, y=.5, s='Shots', fontsize=18, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='center')
+        ax3.text(x=.2, y=.1, s=f'{stats["total_shots"]}', fontsize=14, fontproperties=self.font_props, color=self.primary_text_color, ha='center')
+
+        ax3.text(x=.4, y=.5, s='Goals', fontsize=18, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='center')
+        ax3.text(x=.4, y=.1, s=f'{stats["goals"]}', fontsize=14, fontproperties=self.font_props, color=self.primary_text_color, ha='center')
+
+        ax3.text(x=.6, y=.5, s=' xG', fontsize=18, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='center')
+        ax3.text(x=.6, y=.1, s=f'{stats["total_xG"]:.2f}', fontsize=14, fontproperties=self.font_props, color=self.primary_text_color, ha='center')
+
+        ax3.text(x=.8, y=.5, s='xG/shot', fontsize=18, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='center')
+        ax3.text(x=.8, y=0, s=f'{stats["xG_per_shot"]:.2f}', fontsize=14, fontproperties=self.font_props, color=self.primary_text_color, ha='center')
+        
+        ax3.axis('off')
 
     def add_players(self, players: Union[PlayerStats, CountryStats], metrics):
 
@@ -869,68 +843,44 @@ class ShotsPlot(Visual):
         else:
             raise TypeError("Invalid player type: expected Player or Country")
 
-    def add_title_from_player(self, player: Union[Player, Country]):
-        self.player = player
+    def add_title_from_player(self, player_shots: PlayerShots):
+        player = player_shots.name
+        ax1 = self.fig.add_axes([0, .7, 1, .2])
+        ax1.set_facecolor(self.background_color)
+        ax1.set_xlim(0,1)
+        ax1.set_ylim(0,1)
 
-        title = f"Evaluation of {player.name}?"
-        if isinstance(player, Player):
-            subtitle = f"Based on {player.minutes_played} minutes played"
-        elif isinstance(player, Country):
-            subtitle = f"Based on questions answered in the World Values Survey"
-        else:
-            raise TypeError("Invalid player type: expected Player or Country")
+        ax1.text(x=.5, y=.9, s=player, fontsize=20, fontproperties=self.font_props, fontweight='bold', color=self.primary_text_color, ha='center')
+        ax1.text(x=.5, y=.8, s='All non-penalty shots in the Copa América 2024', fontsize=14, fontproperties=self.font_props, fontweight='bold', color=self.primary_text_color, ha='center')
 
-        self.add_title(title, subtitle)
+        ax1.text(x=.41, y=.61, s='Low xG', fontsize=12, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='right')
+        ax1.scatter(x=.43, y=.63, s=100, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.scatter(x=.46, y=.63, s=200, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.scatter(x=.5, y=.63, s=300, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.scatter(x=.545, y=.63, s=400, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.scatter(x=.595, y=.63, s=500, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.text(x=.625, y=.61, s='High xG', fontsize=12, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='left')
 
-
-
-"""class ViolinPlot(Visual):
-    def violin(data, point_data):
-        # Create a figure object
-        fig = go.Figure()
-
-        # Labels for the columnshover
-        labels = ['extraversion', 'neuroticism', 'agreeableness', 'conscientiousness', 'openness']
-
-        # Loop through each label to add a violin plot trace
-        for label in labels:
-            fig.add_trace(go.Violin(
-                x=df_plot[label],  # Use x for the data
-                name=label,      # Label each violin plot correctly
-                box_visible=True,
-                meanline_visible=True,
-                line_color='black',  # Color of the violin outline
-                fillcolor='rgba(0,100,200,0.3)',  # Color of the violin fill
-                opacity=0.6,
-                orientation='h'  # Set orientation to horizontal
-            )
-        )
-        for label, value in point_data.items():
-            fig.add_trace(
-                go.Scatter(x=[value], y=[label], mode='markers', marker=dict(color='red', size=8, symbol='cross'), name=f'{label} Candidate Point'))
-
-        # Update layout for better visualization
-        fig.update_layout(
-            title='Distribution of Personality Traits',
-            xaxis_title='Score',  
-            yaxis_title='Trait',
-            xaxis=dict(range=[0, 40]),
-            violinmode='overlay', 
-            showlegend=True)
-
-        # Display the plot in Streamlit
-        st.plotly_chart(fig)
-
-
-    def radarPlot(Visual):
-        # Data import
-        data_r = data_p.to_list()  
-        labels = ['Extraversion', 'Neuroticism', 'Agreeableness', 'Conscientiousness', 'Openness']
-        df = pd.DataFrame({'data': data_r,'label': labels})
+        ax1.text(x=.47, y=.43, s='Goal', fontsize=10, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='right')
+        ax1.scatter(x=.485, y=.45, s=100, color=self.primary_color, edgecolor=self.secondary_text_color, linewidth=.8, alpha=.7)
+        ax1.scatter(x=.525, y=.45, s=100, color=self.background_color, edgecolor=self.secondary_text_color, linewidth=.8)
+        ax1.text(x=.54, y=.43, s='No Goal', fontsize=10, fontproperties=self.font_props, fontweight='bold', color=self.secondary_text_color, ha='left')
+        ax1.axis('off')
+        
     
-        # Create the radar plot
-        fig = px.line_polar(df, r='data', theta='label', line_close=True, markers=True)
-        fig.update_layout(polar=dict(radialaxis=dict(visible=True,range=[0, 40])),showlegend=True, title= 'Candidate profile')
-        fig.update_traces(fill='toself', marker=dict(size=5))
-        # Display the plot in Streamlit
-        st.plotly_chart(fig)"""
+    def add_footer(self):
+        ax4 = self.fig.add_axes([0, .15, 1, .05])
+        ax4.set_facecolor(self.background_color)
+        ax4.set_xlim(-.3,1)
+        ax4.set_ylim(-.3,1)
+
+        ax4.text(x=-.3, y=.06, s='Data from', fontsize=8, fontproperties=self.font_props, fontweight='regular', color=self.secondary_text_color, ha='left')
+        img = Image.open('data/ressources/img/statsbomb_logo.png')
+        ax4.text(x=1, y=-.3, s='Martín Steglich', fontsize=8, fontproperties=self.font_props, fontweight='regular', color=self.secondary_text_color, ha='right')
+        image_position = [-.3, -.13, -.3, 0]  # [x_min, x_max, y_min, y_max]
+        ax4.imshow(img, extent=image_position, aspect='auto', zorder=2)
+
+        ax4.axis('off')
+
+    def show_plot(self):
+        st.pyplot(self.fig)

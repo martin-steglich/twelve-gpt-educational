@@ -733,6 +733,9 @@ class ShotsDescription(Description):
             to_be = 'were' if df["inside_shots"] > 1 else 'was'
             description += f'{df["inside_shots"]} of his shots {to_be} from inside the box. '
 
+        if df['avg_distance'] >= 0:
+            description += f'On average, his shots were {df["avg_distance"]:.2f} meters away from the goal. '
+
         #Part of the body
         if df["right_shots"] > 0 :
             to_be = 'were' if df["right_shots"] > 1 else 'was'
@@ -881,15 +884,18 @@ class ShotsDescription(Description):
             to_be = 'were' if df["open_play_goals"] > 1 else 'was'
             description += f'{df["open_play_goals"]} of his goals {to_be} scored from open play. '
 
-        if df["goals"] > 0 and df["accumulated_npxg"] > 0:
-            performance_description =  "he socred less goals than expected, so he underperformed" if df["goals"] < df["accumulated_npxg"] else "he scored more goals than expected, so he overperformed"
+        if df["goals"] >= 0 and df["total_xG"] >= 0:
+            performance_description =  "he socred less goals than expected, so he underperformed" if df["goals"] < df["total_xG"] else "he scored more goals than expected, so he overperformed"
             scored_description = 'goals' if df["goals"] > 1 else 'goal'
-            description += f'His accumulated expected goal (excluding penalties) was {df["accumulated_npxg"]}, '
+            description += f'His accumulated expected goal (excluding penalties) was {df["total_xG"]:.2f}, '
             description += f'since he scored {df["goals"]} {scored_description}, {performance_description}. '
         
-        if df["max_npxg"] > 0:
-            result_description = "off target or hit the posts" if df["result"] == "Off T" or df["result"] == "Wayward" or df["result"] == "Post" else "saved" if df["result"] == "Saved" or df["result"] == "Saved to Post" else df["result"]
-            description += f'His shot with the highest expected goal ({df["max_npxg"]}) was {result_description}.'
+            
+
+        if df['xG_per_shot'] >= 0 and df["max_xg"] >= 0:
+            result_description = "off target or hit the posts" if df["max_xg_outcome"] == "Off T" or df["max_xg_outcome"] == "Wayward" or df["max_xg_outcome"] == "Post" else "saved" if df["max_xg_outcome"] == "Saved" or df["max_xg_outcome"] == "Saved to Post" else df["max_xg_outcome"]
+            description += f'His xG per shot was ({df["xG_per_shot"]:.2f}), and '
+            description += f'his shot with the highest expected goal ({df["max_xg"]:.2f}) was {result_description}.'
 
         return description
 
@@ -900,7 +906,7 @@ class ShotsDescription(Description):
             "The second sentence should describe the player's specific strengths based on the shots. "
             "The third sentence should describe where the player performed well based on the shots he made. "
             "The fourth sentence should describe where the player performed wrong based on the shots he made. "
-            "Finally, summarise exactly how the player performed based on the shots."
+            "Finally, summarize exactly how the player performed based on the shots."
         )
         return [{"role": "user", "content": prompt}]
 

@@ -114,9 +114,12 @@ if chat.state == "empty":
     # Make a plot of the distribution of the metrics for all players
     # We reverse the order of the elements in metrics for plotting (because they plot from bottom to top)
     visual = ShotsPlot()
-    # visual.add_title_from_player(player)
+    visual.add_title_from_player(player)
     # visual.add_players(players, metrics=metrics)
     visual.add_player_shots(player)
+    visual.add_stats(player)
+    visual.add_footer()
+    
 
     # Now call the description class to get the summary of the player
     description = ShotsDescription(player)
@@ -129,6 +132,7 @@ if chat.state == "empty":
         user_only=False,
         visible=False,
     )
+    visual.show_plot()
     # chat.add_message(visual)
     chat.add_message(summary)
 

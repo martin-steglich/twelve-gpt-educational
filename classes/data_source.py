@@ -587,12 +587,15 @@ class PlayerShotsStats(Stats):
     def get_raw_data(self):
 
         df = pd.read_csv("data/events/Shots.csv" , encoding='utf-8')
+        
+        #excluding penalties
+        df = df[df.sub_type_name != 'Penalty']
 
         return df
 
     def process_data(self, df_raw):
         processed_df = pd.DataFrame()
-
+        
         for player in df_raw['player_nickname'].unique():
             player_df = pd.DataFrame()
             df = df_raw[df_raw['player_nickname'] == player]
@@ -675,14 +678,20 @@ class PlayerShotsStats(Stats):
             }
             
             # Non-penalty xG calculations
-            if len(df[~penalty_mask]) > 0:
-                player_stats["accumulated_npxg"] = df[~penalty_mask]["shot_statsbomb_xg"].sum()
-                player_stats["max_npxg"] = df[~penalty_mask]["shot_statsbomb_xg"].max()
-                player_stats["result"] = df.loc[df[~penalty_mask]['shot_statsbomb_xg'].idxmax(), 'outcome_name']
+            if len(df) > 0:
+                player_stats['avg_distance_location'] = df['x'].mean()
+                player_stats['avg_distance'] = 120 - player_stats['avg_distance_location']
+                player_stats["total_xG"] = df["shot_statsbomb_xg"].sum()
+                player_stats['xG_per_shot'] = player_stats["total_xG"] / player_stats['total_shots']
+                player_stats["max_xg"] = df["shot_statsbomb_xg"].max()
+                player_stats["max_xg_outcome"] = df.loc[df['shot_statsbomb_xg'].idxmax(), 'outcome_name']
             else:
-                player_stats["accumulated_npxg"] = 0
-                player_stats["max_npxg"] = 0
-                player_stats["result"] = 0
+                player_stats['avg_distance_location'] = -1
+                player_stats['avg_distance'] = -1
+                player_stats["total_xG"] = -1
+                player_stats['xG_per_shot'] = -1
+                player_stats["max_xg"] = -1
+                player_stats["max_xg_outcome"] = None
 
                 # Convert the stats dictionary to a DataFrame and append it
             player_df = pd.DataFrame([player_stats])
@@ -711,3 +720,15 @@ class PlayerShotsStats(Stats):
             ser_metrics=ser_metrics,
             player_shots=raw_data[raw_data.player_nickname == name],
         )
+
+    def calculate_statistics(df_raw):
+        for player in df_raw['player_nickname'].unique():
+            player_shots = df_raw[df_raw['player_nickname'] == player]
+            player_name = player_shots.player_nickname.drop_duplicates().squeeze()
+            total_shots = player_shots.shape[0]
+            total_goals = player_shots[player_shots.outcome_name == 'Goal'].shape[0]
+            total_xG = player_shots['shot_statsbomb_xg'].sum()
+            xG_per_shot = total_xG / total_shots
+            points_average_distance = player_shots['x'].mean()
+            avg_distance = 120 - points_average_distance
+            return pd.DataFrame([[player_name, total_shots, total_goals, total_xG, xG_per_shot,points_average_distance, avg_distance]],columns=['player','total_shots','total_goals', 'total_xG', 'xG_per_shot', 'avg_distance_location','avg_distance_value'])
